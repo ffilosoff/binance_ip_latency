@@ -4,6 +4,10 @@ project(binance_ip_lookup)
 
 set (CMAKE_CXX_STANDARD 17)
 
+if (APPLE)
+    add_definitions(-DBOOST_ERROR_CODE_HEADER_ONLY)
+endif()
+
 add_executable(binance_ip_lookup
         src/main.cpp
         src/DNSLookup.cpp
@@ -12,7 +16,7 @@ add_executable(binance_ip_lookup
         src/Log.cpp
         src/BinanceIncDepthProcessor.cpp)
 
-find_package(Boost REQUIRED)
+find_package(Boost COMPONENTS program_options system REQUIRED)
 if(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
     target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
@@ -29,10 +33,6 @@ if (RapidJSON_FOUND)
     include_directories(${RapidJSON_INCLUDE_DIR})
     target_link_libraries(${PROJECT_NAME} ${RapidJSON_LIBRARIES})
 endif()
-
-FIND_PACKAGE(Boost COMPONENTS program_options REQUIRED)
-INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
-TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${Boost_LIBRARIES})
 
 find_package(Threads)
 if (Threads_FOUND)

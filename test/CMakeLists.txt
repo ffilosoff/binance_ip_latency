@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 enable_testing()
 find_package(GTest REQUIRED)
 
-if (GTestFound)
+if (GTest_FOUND)
 add_executable(
         binance_ip_lookup_test
         ../src/OrderBook.cpp
