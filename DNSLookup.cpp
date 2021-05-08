@@ -12,9 +12,10 @@
 #define C_ANY 255
 #endif
 
-class DNSResolver : public IDNSLookup
+class DNSResolver
+    : public IDNSLookup
 {
-    std::vector<IPAddressV4> resolve(const std::string & domain) final
+    std::vector<IPAddress> resolve(const std::string & domain) final
     {
         u_char res[NS_MAXDNAME];
         const auto len = res_query(domain.c_str(), C_ANY, C_ANY, res, NS_PACKETSZ);
@@ -28,7 +29,7 @@ class DNSResolver : public IDNSLookup
             ns_rr rr;
             ns_sect section = ns_s_an;
             const auto count = ns_msg_count(handle, section);
-            std::vector<IPAddressV4> ret;
+            std::vector<IPAddress> ret;
             ret.reserve(count);
             for (size_t rrnum = 0; rrnum < count; rrnum++) {
                 if (const auto err = ns_parserr(&handle, ns_s_an, rrnum, &rr); err < 0) {

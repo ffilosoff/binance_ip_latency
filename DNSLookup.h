@@ -1,15 +1,14 @@
 #pragma once
 
+#include "IPAddress.h"
+
 #include <memory>
 #include <vector>
-#include <string>
-
-using IPAddressV4 = std::string;
 
 class IDNSLookup {
 public:
     virtual ~IDNSLookup() = default;
-    virtual std::vector<IPAddressV4> resolve(const std::string & domain) = 0;
+    virtual std::vector<IPAddress> resolve(const std::string & domain) = 0;
 };
 
 std::unique_ptr<IDNSLookup> create_dns_resolver();
