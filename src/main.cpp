@@ -29,12 +29,12 @@ int main(int argc, char ** argv)
     po::options_description desc("Allowed options");
     desc.add_options()
         ("help", "produce help message")
-        ("ticker", po::value<std::string>(&ticker)->default_value("BTCUSDT"), "set ticker, default [BTCUSDT]")
-        ("period", po::value<int64_t>(&delay_ms)->default_value(5000), "set period between statistics output, default [5000]")
-        ("with-orderbook", po::value<bool>(&with_order_book)->default_value(true), "prints order book from the best listener, default [true]")
-        ("show-orderbook-levels-num", po::value<size_t>(&max_ob_levels_to_show)->default_value(true), "set number of levels for orderbook to output, default all [-1]")
-        ("host", po::value<std::string>(&domain)->default_value("stream.binance.com"), "set host to connect, default [stream.binance.com]")
-        ("port", po::value<Port>(&port)->default_value(9443), "set port to connect, default [9443]")
+        ("ticker", po::value<std::string>(&ticker)->default_value("BTCUSDT"), "set ticker")
+        ("period", po::value<int64_t>(&delay_ms)->default_value(5000), "set period between statistics output")
+        ("with-orderbook", po::value<bool>(&with_order_book)->default_value(true), "prints order book from the best listener")
+        ("show-orderbook-levels-num", po::value<size_t>(&max_ob_levels_to_show)->default_value(-1), "set number of levels for orderbook to output, default -1, i.e. all")
+        ("host", po::value<std::string>(&domain)->default_value("stream.binance.com"), "set host to connect")
+        ("port", po::value<Port>(&port)->default_value(9443), "set port to connect")
 
         ;
 
