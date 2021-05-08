@@ -38,6 +38,7 @@ bool BinanceIncDepthProcessor::process(const std::string_view data)
 
     std::unique_lock lock(m_mutex);
 
+    // TODO: add timer for timout of no updates, mark OrderBook as stale
     m_stat.add_update(std::chrono::duration_cast<std::chrono::microseconds>(latency));
     if (!m_build_order_book) {
         return true;
