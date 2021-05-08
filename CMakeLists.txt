@@ -5,12 +5,12 @@ project(binance_ip_lookup)
 set (CMAKE_CXX_STANDARD 17)
 
 add_executable(binance_ip_lookup
-        main.cpp
-        DNSLookup.cpp
-        BinanceWebSocketConnector.cpp
-        OrderBook.cpp
-        Log.cpp
-        BinanceIncDepthProcessor.cpp)
+        src/main.cpp
+        src/DNSLookup.cpp
+        src/BinanceWebSocketConnector.cpp
+        src/OrderBook.cpp
+        src/Log.cpp
+        src/BinanceIncDepthProcessor.cpp)
 
 find_package(Boost)
 if(Boost_FOUND)
@@ -31,3 +31,5 @@ if (RapidJSON_FOUND)
 endif()
 
 target_link_libraries(binance_ip_lookup resolv)
+
+add_subdirectory(test)

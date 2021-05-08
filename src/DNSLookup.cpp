@@ -15,7 +15,7 @@
 class DNSResolver
     : public IDNSLookup
 {
-    std::vector<IPAddress> resolve(const std::string & domain) final
+    std::vector<IPAddress> resolve(const std::string & domain) final  // Can be replaced with boost asio resolve
     {
         u_char res[NS_MAXDNAME];
         const auto len = res_query(domain.c_str(), C_ANY, C_ANY, res, NS_PACKETSZ);

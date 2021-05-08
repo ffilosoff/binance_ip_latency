@@ -1,8 +1,9 @@
 #pragma once
 
+#include <iosfwd>
 #include <vector>
 
-class OrderBook
+class OrderBook // TODO: write tests
 {
     using Price = double;
     using Volume = double;
@@ -27,6 +28,16 @@ public:
     };
 
     void insert_replace(const Price &, const Volume &, Side);
+    void clear();
+
+    const auto & get_bids() const { return m_bids; }
+    const auto & get_asks() const { return m_asks; }
+
+    bool empty() const { return m_bids.empty() && m_asks.empty(); }
+
+    std::ostream & print(std::ostream &) const;
+
+    friend std::ostream & operator<< (std::ostream & strm, const OrderBook & ob) { return ob.print(strm); }
 
 private:
     template <class Comp>

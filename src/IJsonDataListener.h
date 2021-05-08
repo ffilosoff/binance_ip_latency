@@ -1,5 +1,7 @@
 #pragma once
 
+#include "OrderBook.h"
+
 #include <memory>
 #include <ostream>
 #include <string_view>
@@ -18,15 +20,22 @@ struct Statistics
         ++num_updates;
     }
 
+    void clear()
+    {
+        *this = Statistics();
+    }
+
     auto get_min_time() const { return min_time; }
     auto get_max_time() const { return max_time; }
     auto get_avg_time() const { return num_updates ? std::chrono::microseconds(sum_time / num_updates) : sum_time; }
 
+    bool empty() const { return num_updates != 0; }
+
     std::ostream & print(std::ostream & strm) const
     {
         if (num_updates) {
-            return strm << "min: " << min_time.count() << "us, max: " << max_time.count() << ", avg: "
-                        << (sum_time / num_updates).count();
+            return strm << "min: " << min_time.count() << "us, max: " << max_time.count() << "us, avg: "
+                        << (sum_time / num_updates).count() << "us";
         } else {
             return strm << "<empty>";
         }
@@ -48,7 +57,17 @@ public:
     virtual ~IJsonDataListener() = default;
 
     virtual bool process(std::string_view data) = 0;
+    virtual void failure(std::string_view reason) = 0;
+
     virtual Statistics get_statistics() const = 0;
 };
 
+class IDepthDataListener
+    : public IJsonDataListener
+{
+public:
+    virtual OrderBook get_order_book() const = 0;
+};
+
 using JsonDataListenerPtr = std::shared_ptr<IJsonDataListener>;
+using DepthDataListenerPtr = std::shared_ptr<IDepthDataListener>;

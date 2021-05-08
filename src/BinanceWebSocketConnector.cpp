@@ -19,6 +19,9 @@ namespace beast = boost::beast;
         if (m_running.load(std::memory_order_acquire)) \
         { \
             _LOG("ERROR: " << ec.value() << ", " << ec.message()); \
+            if (m_data_listener) { \
+                m_data_listener->failure(ec.message()); \
+            } \
         } \
     } while (0)
 
@@ -27,6 +30,9 @@ namespace beast = boost::beast;
         if (m_running.load(std::memory_order_acquire)) \
         { \
             _LOG("ERROR: " << err); \
+            if (m_data_listener) { \
+                m_data_listener->failure(err); \
+            } \
         } \
     } while(0)
 
@@ -72,6 +78,7 @@ public:
             }
         });
 
+        m_running.store(true, std::memory_order_release);
         m_thread = std::thread([this] {
             _LOG("executing thread");
             m_io_context.run();
@@ -81,7 +88,12 @@ public:
     void stop()
     {
         m_running.store(false, std::memory_order_release);
-        m_thread.join();
+        if (!m_io_context.stopped()) {
+            m_io_context.stop();
+        }
+        if (m_thread.joinable()) {
+            m_thread.join();
+        }
     }
 
     auto get_host() const
@@ -172,20 +184,8 @@ private:
         setup_next_read();
     }
 
-//    bool update_depth()
-//    {
-//        rapidjson::Document document;
-//        document.Parse(m_json_buffer.c_str());
-//
-//        assert(document.IsObject());
-//
-////        _LOG("Parsed json document: " << document);
-//
-//        return true;
-//    }
-
 private:
-    std::atomic<bool> m_running = true;
+    std::atomic<bool> m_running = false;
     std::thread m_thread;
 
     std::string m_request;
@@ -227,7 +227,7 @@ std::unique_ptr<BinanceWebSocketConnector> BinanceWebSocketConnector::make_depth
     std::string ticker,
     JsonDataListenerPtr listener)
 {
-    constexpr auto updatetime = "@100ms";
+    constexpr auto updatetime = ""; //"@100ms"; // Seems that without @100ms flow is faster (need to check)
     return std::make_unique<BinanceWebSocketConnector>(ip, port, "/ws/" + to_lower(std::move(ticker)) + "@depth" + updatetime, std::move(listener));
 }
 

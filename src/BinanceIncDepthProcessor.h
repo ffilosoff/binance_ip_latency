@@ -8,12 +8,14 @@
 namespace binance {
 
 class BinanceIncDepthProcessor final
-    : public IJsonDataListener
+    : public IDepthDataListener
 {
 public:
     bool process(std::string_view data) final;
+    void failure(std::string_view reason) final;
 
     Statistics get_statistics() const final;
+    OrderBook get_order_book() const final;
 
 private:
     mutable std::shared_mutex m_mutex;
