@@ -4,7 +4,8 @@ Pre-requirements (tested):
 2. Boost 1.71 (program_options, system, asio, beast)
 3. OpenSSL 1.1.1f
 4. RapidJSON 1.1.0
-5. (optionally) Google Test 1.10.0-2
+5. GCC 9.3.0
+6. (optionally) Google Test 1.10.0-2
 
 Build:
 ```
