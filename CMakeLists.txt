@@ -41,4 +41,5 @@ endif()
 
 target_link_libraries(binance_ip_lookup resolv)
 
+enable_testing()
 add_subdirectory(test)

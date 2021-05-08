@@ -3,8 +3,7 @@ project(binance_ip_lookup_test)
 
 set(CMAKE_CXX_STANDARD 17)
 
-enable_testing()
-find_package(GTest REQUIRED)
+find_package(GTest)
 
 if (GTest_FOUND)
 add_executable(
@@ -13,7 +12,12 @@ add_executable(
         OrderBookTest.cpp
 )
 
-target_link_libraries(binance_ip_lookup_test GTest::gtest GTest::gtest_main)
+target_link_libraries(${PROJECT_NAME} ${GTEST_BOTH_LIBRARIES})
 
-add_test(AllTestsInFoo binance_ip_lookup_test)
+find_package(Threads)
+if (Threads_FOUND)
+    target_link_libraries(${PROJECT_NAME} Threads::Threads)
+endif()
+
+add_test(${PROJECT_NAME} binance_ip_lookup_test)
 endif()
