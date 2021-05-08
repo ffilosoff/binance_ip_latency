@@ -97,7 +97,12 @@ int main(int argc, char ** argv)
         for (const auto & [connection, listener] : measurers) {
             stats.emplace_back(connection->get_host(), listener->get_statistics(), listener);
         }
-        std::sort(stats.begin(), stats.end(), [] (const auto & a, const auto & b) { return !std::get<1>(a).empty() && std::get<1>(a).get_avg_time() < std::get<1>(b).get_avg_time(); });
+        std::sort(stats.begin(), stats.end(), [] (const auto & a, const auto & b) {
+            if (std::get<1>(a).empty()) {
+                return false;
+            }
+            return std::get<1>(a).get_avg_time() < std::get<1>(b).get_avg_time();
+        });
         std::ostringstream oss;
         oss << "Statistics:\n";
         for (const auto & [host, s, listener_] : stats) {
@@ -105,7 +110,12 @@ int main(int argc, char ** argv)
         }
 	if (with_order_book) {
             oss << "OrderBook from the best listener:\n";
-	    std::get<2>(stats[0])->get_order_book().print(oss, max_ob_levels_to_show);
+	    auto & listener = std::get<2>(stats[0]);
+	    if (listener) {
+	        std::get<2>(stats[0])->get_order_book().print(oss, max_ob_levels_to_show);
+	    } else {
+                ALWAYS_LOG("[ERROR]: unexpected empty listener when with_order_book=" << std::boolalpha << with_order_book);
+	    }
         }
         ALWAYS_LOG(std::move(oss).str());
         std::unique_lock lk(signal_mutex); // synchronizes run variable

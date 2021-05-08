@@ -3,6 +3,7 @@
 #include "OrderBook.h"
 
 #include <chrono>
+#include <iomanip>
 #include <memory>
 #include <ostream>
 #include <string_view>
@@ -30,13 +31,13 @@ struct Statistics
     auto get_max_time() const { return max_time; }
     auto get_avg_time() const { return num_updates ? std::chrono::microseconds(sum_time / num_updates) : sum_time; }
 
-    bool empty() const { return num_updates != 0; }
+    bool empty() const { return num_updates == 0; }
 
     std::ostream & print(std::ostream & strm) const
     {
         if (num_updates) {
-            return strm << "min: " << min_time.count() << "us, max: " << max_time.count() << "us, avg: "
-                        << (sum_time / num_updates).count() << "us";
+            return strm << "min: " << std::setw(7) << min_time.count() << "us, max: " << std::setw(7) << max_time.count() << "us, avg: "
+                        << std::setw(7) << (sum_time / num_updates).count() << "us";
         } else {
             return strm << "<empty>";
         }
