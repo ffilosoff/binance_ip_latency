@@ -16,3 +16,18 @@ Test:
 ```
 $ make test
 ```
+
+Usage:
+```
+Allowed options:
+  --help                                produce help message
+  --ticker arg (=BTCUSDT)               set ticker
+  --period arg (=5000)                  set period between statistics output
+  --with-orderbook arg (=1)             prints order book from the best 
+                                        listener
+  --show-orderbook-levels-num arg (=18446744073709551615)
+                                        set number of levels for orderbook to 
+                                        output, default -1, i.e. all
+  --host arg (=stream.binance.com)      set host to connect
+  --port arg (=9443)                    set port to connect
+```
