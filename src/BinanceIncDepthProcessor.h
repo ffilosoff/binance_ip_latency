@@ -22,7 +22,7 @@ public:
 private:
     mutable std::shared_mutex m_mutex;
 
-    const bool m_build_order_book;
+    bool m_build_order_book;
     OrderBook m_order_book;
     Statistics m_stat;
 };
