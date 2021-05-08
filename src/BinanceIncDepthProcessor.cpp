@@ -6,6 +6,10 @@
 
 namespace binance {
 
+BinanceIncDepthProcessor::BinanceIncDepthProcessor(bool build_order_book)
+        : m_build_order_book(build_order_book)
+{ }
+
 bool BinanceIncDepthProcessor::process(const std::string_view data)
 {
     LOG_LINE("BinanceIncDepthProcessor::process()");
@@ -30,8 +34,10 @@ bool BinanceIncDepthProcessor::process(const std::string_view data)
 
     std::unique_lock lock(m_mutex);
 
-    m_stat.add_update(latency);
-
+    m_stat.add_update(std::chrono::duration_cast<std::chrono::microseconds>(latency));
+    if (!m_build_order_book) {
+        return true;
+    }
     if (d.HasMember("b")) {
         const auto bids = d["b"].GetArray();
         LOG_LINE("Bids size: " << bids.Size());

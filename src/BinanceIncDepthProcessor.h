@@ -11,6 +11,8 @@ class BinanceIncDepthProcessor final
     : public IDepthDataListener
 {
 public:
+    BinanceIncDepthProcessor(bool build_order_book);
+
     bool process(std::string_view data) final;
     void failure(std::string_view reason) final;
 
@@ -20,6 +22,7 @@ public:
 private:
     mutable std::shared_mutex m_mutex;
 
+    const bool m_build_order_book;
     OrderBook m_order_book;
     Statistics m_stat;
 };

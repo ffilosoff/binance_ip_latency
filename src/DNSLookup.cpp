@@ -2,6 +2,32 @@
 
 #include "Log.h"
 
+#ifndef USE_UNIX_RESOLVE
+
+#include <boost/asio.hpp>
+
+namespace asio = boost::asio;
+
+class DNSResolver
+    : public IDNSLookup
+{
+    std::vector<IPAddress> resolve(const std::string & domain) final
+    {
+        asio::io_context ioc;
+	boost::asio::ip::tcp::resolver resolver(ioc);
+
+	const auto res = resolver.resolve(domain, "0");
+	std::vector<IPAddress> ret;
+	ret.reserve(res.size());
+	for (const auto & v : res) {
+            ret.emplace_back(v.endpoint().address().to_string());
+	}
+	return ret;
+    }
+};
+
+#else
+
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/nameser.h>
@@ -18,7 +44,7 @@ class DNSResolver
     std::vector<IPAddress> resolve(const std::string & domain) final  // Can be replaced with boost asio resolve
     {
         u_char res[NS_MAXDNAME];
-        const auto len = res_query(domain.c_str(), C_ANY, C_ANY, res, NS_PACKETSZ);
+        const auto len = res_query(domain.c_str(), C_ANY, C_ANY, res, sizeof(res));
         LOG_LINE("ret res_query(): " << len);
         if (len > 0) {
             ns_msg handle;
@@ -47,6 +73,7 @@ class DNSResolver
         return {};
     }
 };
+#endif
 
 std::unique_ptr<IDNSLookup> create_dns_resolver()
 {

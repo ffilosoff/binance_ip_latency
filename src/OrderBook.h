@@ -35,7 +35,7 @@ public:
 
     bool empty() const { return m_bids.empty() && m_asks.empty(); }
 
-    std::ostream & print(std::ostream &) const;
+    std::ostream & print(std::ostream &, size_t levels_num = -1) const;
 
     friend std::ostream & operator<< (std::ostream & strm, const OrderBook & ob) { return ob.print(strm); }
 

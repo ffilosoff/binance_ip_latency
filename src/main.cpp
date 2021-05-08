@@ -19,11 +19,12 @@ namespace po = boost::program_options;
 
 int main(int argc, char ** argv)
 {
-    std::string ticker;
-    int64_t delay_ms;
-    bool with_order_book;
-    std::string domain;
-    Port port;
+    std::string ticker = "BTCUSDT";
+    int64_t delay_ms = 5000;
+    bool with_order_book = true;
+    size_t max_ob_levels_to_show = -1;
+    std::string domain = "stream.binance.com";
+    Port port = 9443;
 
     po::options_description desc("Allowed options");
     desc.add_options()
@@ -31,17 +32,30 @@ int main(int argc, char ** argv)
         ("ticker", po::value<std::string>(&ticker)->default_value("BTCUSDT"), "set ticker, default [BTCUSDT]")
         ("period", po::value<int64_t>(&delay_ms)->default_value(5000), "set period between statistics output, default [5000]")
         ("with-orderbook", po::value<bool>(&with_order_book)->default_value(true), "prints order book from the best listener, default [true]")
+        ("show-orderbook-levels-num", po::value<size_t>(&max_ob_levels_to_show)->default_value(true), "set number of levels for orderbook to output, default all [-1]")
         ("host", po::value<std::string>(&domain)->default_value("stream.binance.com"), "set host to connect, default [stream.binance.com]")
         ("port", po::value<Port>(&port)->default_value(9443), "set port to connect, default [9443]")
 
         ;
 
     po::variables_map vm;
+
     po::store(po::parse_command_line(argc, argv, desc), vm);
+    po::notify(vm); // call after last store, and before accesing parsed variables
     if (vm.count("help")) {
         ALWAYS_LOG(desc);
         return 1;
     }
+
+    const auto period = std::chrono::milliseconds(delay_ms);
+    ALWAYS_LOG(
+        "Configuration:"
+        << "\n Ticker: " << ticker
+        << "\n Period: " << period.count() << "ms"
+        << "\n Build order book: " << std::boolalpha << with_order_book
+        << "\n Max OB levels num to show: " << max_ob_levels_to_show
+        << "\n Host: " << domain
+        << "\n Port: " << port);
 
     const auto dns_lookup = create_dns_resolver();
 
@@ -52,7 +66,7 @@ int main(int argc, char ** argv)
     std::vector<std::pair<std::unique_ptr<IConnector>, DepthDataListenerPtr>> measurers;
     measurers.reserve(ips.size());
     for (const auto & ip : ips) {
-        auto listener = std::make_shared<binance::BinanceIncDepthProcessor>();
+        auto listener = std::make_shared<binance::BinanceIncDepthProcessor>(with_order_book);
         auto copy_listener = listener;
         auto & it = measurers.emplace_back(binance::BinanceWebSocketConnector::make_depth_connector(ip, port, ticker, std::move(listener)), std::move(copy_listener));
         try {
@@ -89,10 +103,17 @@ int main(int argc, char ** argv)
         for (const auto & [host, s, listener_] : stats) {
             oss << std::setw(15) << host << ": " << s << "\n";
         }
-        oss << "OrderBook from best listener:\n" << std::get<2>(stats[0])->get_order_book();
+	if (with_order_book) {
+            oss << "OrderBook from the best listener:\n";
+	    std::get<2>(stats[0])->get_order_book().print(oss, max_ob_levels_to_show);
+        }
         ALWAYS_LOG(std::move(oss).str());
         std::unique_lock lk(signal_mutex); // synchronizes run variable
         cv.wait_for(lk, std::chrono::milliseconds(delay_ms));
+    }
+    ALWAYS_LOG("Stopping measurers");
+    for (auto & m : measurers) {
+        m.first->stop();
     }
     return 0;
 }

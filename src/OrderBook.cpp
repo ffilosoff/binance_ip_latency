@@ -124,7 +124,7 @@ void OrderBook::clear()
     m_asks.clear();
 }
 
-std::ostream & OrderBook::print(std::ostream & strm) const
+std::ostream & OrderBook::print(std::ostream & strm, const size_t levels_to_show) const
 {
     const auto print_pre = [] (auto & strm) { strm << "\n|"; };
     const auto print_lvl = [] (auto & strm, const auto & lvls, const auto idx) {
@@ -137,8 +137,13 @@ std::ostream & OrderBook::print(std::ostream & strm) const
     const auto print_post = [] (auto & strm) { strm << "|"; };
     const auto max_sz = std::max(m_asks.size(), m_bids.size());
     strm << "OrderBook: BIDS: " << m_bids.size() << ", ASKS: " << m_asks.size();
+    if (levels_to_show == -1) {
+        strm << ", showing ALL levels";
+    } else {
+        strm << ", showing max " << levels_to_show << " levels";
+    }
     strm << "\n||            BIDS             ||" << "            ASKS             ||";
-    for (size_t idx = 0; idx < max_sz; ++idx) {
+    for (size_t idx = 0; idx < std::min(max_sz, levels_to_show); ++idx) {
         print_pre(strm);
         print_lvl(strm, m_bids, idx);
         print_lvl(strm, m_asks, idx);
