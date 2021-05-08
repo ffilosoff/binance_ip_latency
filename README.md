@@ -32,3 +32,8 @@ Allowed options:
   --host arg (=stream.binance.com)      set host to connect
   --port arg (=9443)                    set port to connect
 ```
+
+Execute example:
+```
+./binance_ip_lookup --ticker=BTCUSDT --period=3000 --with-orderbook=true --show-orderbook-levels-num=5 --host=stream.binance.com --port=9443
+```
