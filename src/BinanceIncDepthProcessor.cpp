@@ -24,7 +24,7 @@ bool BinanceIncDepthProcessor::process(const std::string_view data)
         const std::chrono::milliseconds ms_ts(ts);
 
         // Our delay cannot be more than seconds, therefore we do not need to convert
-        // timezones, just need to remove alignement to 30 minutes difference between
+        // timezones, just need to remove alignement to 15 minutes difference between
         //  us and binance server
 
         using namespace std::chrono_literals;
@@ -33,8 +33,9 @@ bool BinanceIncDepthProcessor::process(const std::string_view data)
         const auto now = std::chrono::system_clock::now();
         const auto diff = now - event_ts;
         const auto abs_diff = diff > 0us ? diff : -diff;
-        const auto minutes_alignment = std::chrono::duration_cast<std::chrono::minutes>(abs_diff) / 30min;
-        const auto minutes_diff = minutes_alignment * 30min;
+	constexpr auto minimal_timezone_diff = 15min; // some timezones have 45 mins alignmenent, so 15 minutes here
+        const auto minutes_alignment = std::chrono::duration_cast<std::chrono::minutes>(abs_diff) / minimal_timezone_diff;
+        const auto minutes_diff = minutes_alignment * minimal_timezone_diff;
 
         const auto latency = abs_diff - minutes_diff;
 
