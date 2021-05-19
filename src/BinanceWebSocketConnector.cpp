@@ -5,8 +5,10 @@
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/beast.hpp>
-#include <utility>
 #include <boost/beast/websocket/ssl.hpp>
+
+#include <thread>
+#include <utility>
 
 namespace binance {
 
@@ -14,6 +16,7 @@ namespace asio = boost::asio;
 namespace beast = boost::beast;
 
 #define _LOG(msg) LOG_LINE("[" << m_endpoint.address() << ":" << m_endpoint.port() << "]: " << msg)
+#define _LOG_ALWAYS(msg) ALWAYS_LOG("[" << m_endpoint.address() << ":" << m_endpoint.port() << "]: " << msg)
 #define report_error(ec) \
     do { \
         if (m_running.load(std::memory_order_acquire)) \
@@ -22,6 +25,8 @@ namespace beast = boost::beast;
             if (m_data_listener) { \
                 m_data_listener->failure(ec.message()); \
             } \
+            m_failure_reason = ec.message(); \
+            m_running.store(false, std::memory_order_release); \
         } \
     } while (0)
 
@@ -33,6 +38,8 @@ namespace beast = boost::beast;
             if (m_data_listener) { \
                 m_data_listener->failure(err); \
             } \
+            m_failure_reason = err; \
+            m_running.store(false, std::memory_order_release); \
         } \
     } while(0)
 
@@ -40,7 +47,7 @@ namespace {
 std::string to_lower(std::string str)
 {
     for (auto & v : str) {
-        v = std::tolower(v);
+        v = std::tolower(static_cast<char>(v));
     }
     return str;
 }
@@ -67,7 +74,7 @@ public:
 
     void start()
     {
-        auto ep = asio::ip::tcp::resolver::results_type::create(m_endpoint, "stream.binance.com", "9443");
+        auto ep = asio::ip::tcp::resolver::results_type::create(m_endpoint, m_endpoint.address().to_string(), std::to_string(m_endpoint.port()));
         asio::async_connect(m_ws.next_layer().next_layer(), ep, [this] (const auto ec, const auto & it) {
             _LOG("connection successful");
             if (ec) {
@@ -81,7 +88,14 @@ public:
         m_running.store(true, std::memory_order_release);
         m_thread = std::thread([this] {
             _LOG("executing thread");
-            m_io_context.run();
+            do {
+                boost::system::error_code ec;
+                m_io_context.run_for(std::chrono::seconds(1));
+                setup_ping();
+            } while (m_running.load(std::memory_order_acquire));
+            if (!m_failure_reason.empty()) {
+                _LOG_ALWAYS("stopped because of [" << m_failure_reason << "]");
+            }
         });
     }
 
@@ -101,15 +115,57 @@ public:
         return m_endpoint.address().to_string();
     }
 
+    bool is_running() const
+    {
+        return m_running.load(std::memory_order_acquire);
+    }
+
 private:
     void setup_keep_alive()
     {
         _LOG("setup_keep_alive()");
         m_ws.control_callback(
             [this] ([[maybe_unused]] const beast::websocket::frame_type kind, [[maybe_unused]] const beast::string_view payload) mutable {
-                m_ws.async_pong(beast::websocket::ping_data{}, [this] (const auto ec) { _LOG("async_pong(): " << ec); });
+                _LOG("kind: " << (int)kind << ", payload: " << payload);
+                switch (kind) {
+                    case beast::websocket::frame_type::ping:
+                    {
+                        m_ws.async_pong(beast::websocket::ping_data{}, [this](const auto ec) {
+                            _LOG("async_pong(): " << ec);
+                            if (ec) {
+                                report_error(ec);
+                            }
+                        });
+                        break;
+                    }
+                    case beast::websocket::frame_type::pong:
+                    {
+                        const auto prev = m_ping_sent.exchange(false);
+                        _LOG("Received pong, previouslt ping was sent: " << std::boolalpha << prev);
+                        break;
+                    }
+                    default:
+                        break;
+                }
             }
         );
+    }
+
+    void setup_ping()
+    {
+        m_ws.async_ping(beast::websocket::ping_data{}, [this] (const auto ec) {
+            _LOG("async_ping(): " << ec);
+            if (m_ready.load(std::memory_order_acquire)) {
+                if (ec) {
+                    report_error(ec);
+                } else {
+                    const auto prev = m_ping_sent.exchange(true);
+                    if (prev) {
+                        report_str_error("Previous ping was not ponged");
+                    }
+                }
+            }
+        });
     }
 
     void ssl_handshake()
@@ -131,11 +187,12 @@ private:
     {
         _LOG("setup_reader()");
         m_ws.async_handshake(
-            "stream.binance.com", m_request, [this] (const auto ec) mutable {
+            m_endpoint.address().to_string(), m_request, [this](const auto ec) mutable {
                 _LOG("start reading");
                 if (ec) {
                     report_error(ec);
                 } else {
+                    m_ready.store(true, std::memory_order_release);
                     setup_next_read();
                 }
             }
@@ -187,6 +244,9 @@ private:
 private:
     std::atomic<bool> m_running = false;
     std::thread m_thread;
+    std::atomic<bool> m_ready {false};
+    std::atomic<bool> m_ping_sent {false};
+    std::string m_failure_reason;
 
     std::string m_request;
     asio::ip::tcp::endpoint m_endpoint;
@@ -214,6 +274,11 @@ void BinanceWebSocketConnector::start()
 void BinanceWebSocketConnector::stop()
 {
     return m_impl->stop();
+}
+
+bool BinanceWebSocketConnector::is_running() const
+{
+    return m_impl->is_running();
 }
 
 IPAddress BinanceWebSocketConnector::get_host() const

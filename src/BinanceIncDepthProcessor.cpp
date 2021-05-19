@@ -33,7 +33,9 @@ bool BinanceIncDepthProcessor::process(const std::string_view data)
         const auto now = std::chrono::system_clock::now();
         const auto diff = now - event_ts;
         const auto abs_diff = diff > 0us ? diff : -diff;
-	constexpr auto minimal_timezone_diff = 15min; // some timezones have 45 mins alignmenent, so 15 minutes here
+
+	    constexpr auto minimal_timezone_diff = 15min; // some timezones have 45 mins alignmenent, so 15 minutes here
+
         const auto minutes_alignment = std::chrono::duration_cast<std::chrono::minutes>(abs_diff) / minimal_timezone_diff;
         const auto minutes_diff = minutes_alignment * minimal_timezone_diff;
 

@@ -13,16 +13,21 @@ class DNSResolver
 {
     std::vector<IPAddress> resolve(const std::string & domain) final
     {
-        asio::io_context ioc;
-	boost::asio::ip::tcp::resolver resolver(ioc);
+        try {
+            asio::io_context ioc;
+            boost::asio::ip::tcp::resolver resolver(ioc);
 
-	const auto res = resolver.resolve(domain, "0");
-	std::vector<IPAddress> ret;
-	ret.reserve(res.size());
-	for (const auto & v : res) {
-            ret.emplace_back(v.endpoint().address().to_string());
-	}
-	return ret;
+            const auto res = resolver.resolve(domain, "0");
+            std::vector<IPAddress> ret;
+            ret.reserve(res.size());
+            for (const auto & v : res) {
+                ret.emplace_back(v.endpoint().address().to_string());
+            }
+            return ret;
+        } catch (std::exception & e) {
+            ALWAYS_LOG("Could not resolve [" << domain << "] with exception: " << e.what());
+        }
+        return {};
     }
 };
 

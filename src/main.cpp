@@ -94,8 +94,16 @@ int main(int argc, char ** argv)
     stats.reserve(measurers.size());
     while (run) {
         stats.clear();
+        bool any_running = false;
         for (const auto & [connection, listener] : measurers) {
-            stats.emplace_back(connection->get_host(), listener->get_statistics(), listener);
+            if (connection->is_running()) {
+                any_running = true;
+                stats.emplace_back(connection->get_host(), listener->get_statistics(), listener);
+            }
+        }
+        if (!any_running) {
+            ALWAYS_LOG("All connections are down, time to stop");
+            break;
         }
         std::sort(stats.begin(), stats.end(), [] (const auto & a, const auto & b) {
             if (std::get<1>(a).empty()) {
